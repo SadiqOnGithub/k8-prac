@@ -1,0 +1,69 @@
+# --- API Version ---
+# This specifies the version of the Kubernetes API you're using to create this object.
+# 'apps/v1' is the standard, stable version for Deployments.
+apiVersion: apps/v1
+
+# --- Kind ---
+# This specifies the type of Kubernetes object you are creating.
+# In this case, it's a 'Deployment'. A Deployment manages a set of identical pods,
+# ensuring that a specified number of them are always running and handling updates.
+kind: Deployment
+
+# --- Metadata ---
+# This section contains data that helps uniquely identify the object.
+# It includes things like the name, labels, and annotations.
+metadata:
+  # 'name' is the unique name for your Deployment object.
+  # You will use this name to refer to the deployment in kubectl commands.
+  name: v1
+  # 'labels' are key/value pairs that are attached to objects.
+  # They are used to organize and select groups of objects.
+  # This deployment is labeled as part of the 'nginx' app.
+  labels:
+    app: nginx
+
+# --- Specification ('spec') ---
+# This is the most important section. It defines the desired state for the Deployment.
+# This is where you tell Kubernetes what you want your deployment to look like.
+spec:
+  # 'replicas' is the number of identical pods you want to run.
+  # Kubernetes will ensure that exactly 3 pods matching this template are running.
+  replicas: 3
+
+  # --- Selector ---
+  # The 'selector' tells the Deployment which pods to manage.
+  # It finds pods that have the labels specified here.
+  # This must match the labels of the pods created by the template below.
+  selector:
+    matchLabels:
+      # This deployment will manage any pod with the label 'app: nginx'.
+      app: nginx
+
+  # --- Template ---
+  # The 'template' section defines the blueprint for the pods that this Deployment will create.
+  # Every pod created by this deployment will be based on this template.
+  template:
+    # --- Pod Metadata ---
+    # This is the metadata for the pods themselves.
+    metadata:
+      # The pods get their own labels. The Deployment's 'selector' uses these labels
+      # to identify which pods belong to it.
+      labels:
+        app: nginx
+
+    # --- Pod Specification ('spec') ---
+    # This defines the actual contents and behavior of the pod.
+    spec:
+      # 'containers' is a list of one or more containers that should run inside the pod.
+      # Most pods only have one container, but you can have more.
+      containers:
+        # 'name' is the name of the container within the pod.
+        - name: nginx
+          # 'image' specifies which Docker container image to use.
+          # 'nginx:latest' tells Kubernetes to pull the latest version of the official nginx image.
+          image: nginx:latest
+          # 'ports' lists the network ports that the container exposes.
+          ports:
+            # 'containerPort' is the port on the container that the application is listening on.
+            # The nginx web server listens on port 80 by default.
+            - containerPort: 80
