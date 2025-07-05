@@ -143,3 +143,78 @@ Open a **new terminal** and use `curl` or a browser.
 ```bash
 curl localhost:8080
 ```
+
+---
+
+## Inspecting Resources
+
+### Get Detailed Information (Describe)
+
+Get a detailed, human-readable report on any resource. Essential for troubleshooting.
+
+- **Describe a node:**
+  ```bash
+  kubectl describe node <node-name>
+  ```
+- **Describe a pod:**
+  ```bash
+  kubectl describe pod <pod-name>
+  ```
+- **Describe a deployment:**
+  ```bash
+  kubectl describe deployment <deployment-name>
+  ```
+
+---
+
+## Advanced Experiments
+
+### 1. Expose Deployment with a Service
+
+Create a stable network endpoint that load-balances traffic to your pods.
+
+- **Expose the deployment:**
+  ```bash
+  kubectl expose deployment <deployment-name> --type=NodePort --port=80
+  ```
+  *Example:* `kubectl expose deployment v1 --type=NodePort --port=80`
+
+- **Find the service port:**
+  ```bash
+  kubectl get service <deployment-name>
+  ```
+  (Look for the port mapped to port 80, e.g., `80:31234/TCP`)
+
+- **Access the service:**
+  ```bash
+  curl localhost:<node-port>
+  ```
+  *Example:* `curl localhost:31234`
+
+### 2. Test Self-Healing
+
+Watch Kubernetes automatically replace a deleted pod.
+
+- **Watch pods in one terminal:**
+  ```bash
+  kubectl get pods -w
+  ```
+- **Delete a pod in a second terminal:**
+  ```bash
+  kubectl delete pod <pod-name>
+  ```
+
+### 3. Perform a Rolling Update
+
+Update the application to a new version with zero downtime.
+
+- **Update the container image:**
+  ```bash
+  kubectl set image deployment/<deployment-name> <container-name>=<new-image>
+  ```
+  *Example:* `kubectl set image deployment/v1 nginx=httpd`
+
+- **Check rollout status:**
+  ```bash
+  kubectl rollout status deployment/<deployment-name>
+  ```
