@@ -90,3 +90,56 @@ kubectl config use-context kind-kind
 ```
 
 After switching contexts, all `kubectl` commands (`get pods`, `get namespaces`, etc.) will be directed to the newly selected cluster.
+
+---
+
+## Deploying & Accessing Applications
+
+### 1. Apply a Deployment
+
+Create resources (like a deployment) in your cluster from a YAML file.
+
+```bash
+kubectl apply -f <your-deployment-file>.yaml
+```
+*Example:* `kubectl apply -f v1-deployment.yaml`
+
+### 2. Check the Deployment
+
+Verify that the deployment was created successfully and its pods are running.
+
+```bash
+kubectl get deployment <deployment-name>
+```
+*Example:* `kubectl get deployment v1`
+
+### 3. Check the Pods
+
+List the running pods created by the deployment.
+
+```bash
+kubectl get pods
+```
+
+### 4. Access the Application (Port Forward)
+
+The quickest way to access your application from your local machine for testing.
+
+**A. Get the pod name:**
+```bash
+kubectl get pods
+```
+(Look for a pod name like `v1-xxxxxxxxxx-yyyyy`)
+
+**B. Forward the port:**
+This command connects your local port (e.g., 8080) to the pod's port (e.g., 80).
+```bash
+kubectl port-forward <pod-name> <local-port>:<pod-port>
+```
+*Example:* `kubectl port-forward v1-6d5d4c5b8f-abcde 8080:80`
+
+**C. Test the connection:**
+Open a **new terminal** and use `curl` or a browser.
+```bash
+curl localhost:8080
+```
