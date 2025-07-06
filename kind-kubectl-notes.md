@@ -263,3 +263,38 @@ After completing these steps, you can now access your Nginx service directly fro
 curl localhost:8080
 ```
 You should see the "Welcome to nginx!" page.
+
+---
+
+### What Happens If You Don't Add `extraPortMappings` to `kind-v1.yml`?
+
+This is a critical concept to understand. If you omit the `extraPortMappings` from your `kind` configuration:
+
+1.  **Everything inside the cluster works perfectly.** The `NodePort` service will still be created and will open port `30080` on all nodes.
+2.  **Access from `localhost` will fail.** Trying to connect to `http://localhost:8080` will result in a "Connection Refused" error.
+
+**The Reason:** The `kind` nodes are Docker containers running in their own private network, separate from your host machine's network (`localhost`). The `extraPortMappings` configuration is the bridge that connects a port on your `localhost` to a port on a node (container).
+
+**How to Access the Service (The Hard Way):**
+
+Without the mapping, you would have to find the internal IP address of one of the nodes and use that IP directly. This is inconvenient but demonstrates how the networking is isolated.
+
+1.  **Find a node's container name:**
+    ```bash
+    docker ps
+    ```
+    *(Look for a name like `v1-control-plane`)*
+
+2.  **Find its internal IP address:**
+    ```bash
+    docker inspect -f '{{.NetworkSettings.Networks.kind.IPAddress}}' v1-control-plane
+    ```
+    *(This might return an IP like `172.20.0.2`)*
+
+3.  **Access the service using that IP:**
+    ```bash
+    curl http://<node-internal-ip>:30080
+    ```
+    *(Example: `curl http://172.20.0.2:30080`)*
+
+This confirms that the `extraPortMappings` is a crucial convenience for local development with `kind`.
