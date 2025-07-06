@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      nodeSelector:
+        nodetype: backend # This forces the pod to the 'backend' node
+      containers:
+      - name: httpd
+        image: httpd # Using a different image for variety
+        ports:
+        - containerPort: 80

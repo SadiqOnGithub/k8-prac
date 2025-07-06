@@ -1,0 +1,28 @@
+# v3/kind.yml - Advanced Kind Configuration
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    # 1. Expose multiple ports for different services
+    extraPortMappings:
+    - containerPort: 30080
+      hostPort: 8080 # For a web application
+      protocol: TCP
+    - containerPort: 30090
+      hostPort: 9090 # For an admin dashboard or another service
+      protocol: TCP
+    - containerPort: 30100
+      hostPort: 8888 # For the local dev test
+      protocol: TCP
+    # 2. Mount a local directory into the control-plane node
+    extraMounts:
+    - hostPath: ./v3/app # A directory on your local machine
+      containerPath: /app-data # The path inside the node
+
+  # 3. Use labels to create specialized worker nodes
+  - role: worker
+    labels:
+      nodetype: frontend
+  - role: worker
+    labels:
+      nodetype: backend
