@@ -167,54 +167,99 @@ Get a detailed, human-readable report on any resource. Essential for troubleshoo
 
 ---
 
-## Advanced Experiments
+## Exposing Applications: A Complete Example
 
-### 1. Expose Deployment with a Service
+This section provides a complete, end-to-end guide for exposing your application using a `NodePort` service, made accessible on `localhost` via your `kind` configuration.
 
-Create a stable network endpoint that load-balances traffic to your pods.
+### The Networking Flow
 
-- **Expose the deployment:**
-  ```bash
-  kubectl expose deployment <deployment-name> --type=NodePort --port=80
-  ```
-  *Example:* `kubectl expose deployment v1 --type=NodePort --port=80`
+`Your Browser` -> `http://localhost:8080` -> `(Docker Network)` -> `Node:30080` -> `Service` -> `Pod:80`
 
-- **Find the service port:**
-  ```bash
-  kubectl get service <deployment-name>
-  ```
-  (Look for the port mapped to port 80, e.g., `80:31234/TCP`)
+### Step 1: Configure `kind` for Port Mapping
 
-- **Access the service:**
-  ```bash
-  curl localhost:<node-port>
-  ```
-  *Example:* `curl localhost:31234`
+Your `kind-v1.yml` is configured to forward traffic from your local machine's port `8080` to the `NodePort` `30080` inside the cluster's control-plane node. This is done with `extraPortMappings`.
 
-### 2. Test Self-Healing
+**`kind-v1.yml`:**
+```yaml
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 30080  # The NodePort in the K8s service
+    hostPort: 8080        # The port on your local machine
+    protocol: TCP
+```
 
-Watch Kubernetes automatically replace a deleted pod.
+**Action:** You must create your cluster with this configuration.
+```bash
+# Delete the old cluster if it exists
+kind delete cluster --name v1
 
-- **Watch pods in one terminal:**
-  ```bash
-  kubectl get pods -w
-  ```
-- **Delete a pod in a second terminal:**
-  ```bash
-  kubectl delete pod <pod-name>
-  ```
+# Create the new cluster with the port mapping
+kind create cluster --name v1 --config kind-v1.yml
+```
 
-### 3. Perform a Rolling Update
+### Step 2: Deploy Your Application
 
-Update the application to a new version with zero downtime.
+Your `v1-deployment.yaml` deploys 3 replicas of Nginx. The key part is the `labels` which the service will use to find the pods, and the `containerPort` which the service will send traffic to.
 
-- **Update the container image:**
-  ```bash
-  kubectl set image deployment/<deployment-name> <container-name>=<new-image>
-  ```
-  *Example:* `kubectl set image deployment/v1 nginx=httpd`
+**`v1-deployment.yaml`:**
+```yaml
+metadata:
+  labels:
+    app: nginx #<-- Service selector will match this
+spec:
+  template:
+    metadata:
+      labels:
+        app: nginx #<-- Service selector will match this
+    spec:
+      containers:
+      - name: nginx
+        ports:
+        - containerPort: 80 #<-- Service will send traffic here
+```
+**Action:**
+```bash
+kubectl apply -f v1-deployment.yaml
+```
 
-- **Check rollout status:**
-  ```bash
-  kubectl rollout status deployment/<deployment-name>
-  ```
+### Step 3: Create the `NodePort` Service
+
+The `v1-service.yaml` file creates the service that exposes the pods.
+
+- `type: NodePort`: Exposes the service on a port on each node.
+- `selector: app: nginx`: Finds all pods with the `app: nginx` label.
+- `port: 80`: The service's own internal port.
+- `targetPort: 80`: The port on the pod to send traffic to.
+- `nodePort: 30080`: The specific high-level port to open on all nodes. This **must match** the `containerPort` in your `kind-v1.yml`.
+
+**`v1-service.yaml`:**
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: v1-service
+spec:
+  type: NodePort
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+```
+**Action:**
+```bash
+kubectl apply -f v1-service.yaml
+```
+
+### Step 4: Access Your Application
+
+After completing these steps, you can now access your Nginx service directly from your host machine.
+
+```bash
+# Test the connection
+curl localhost:8080
+```
+You should see the "Welcome to nginx!" page.
